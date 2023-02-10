@@ -82,7 +82,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         ys = []
         print("Current Batch:", batch)
         print("Current Id:", id)
-        while (len(xs) < BATCH_SIZE):
+        while (len(xs) < batch_size):
             data = db.getXY(id)
             id = id+1
             if (data == None):
