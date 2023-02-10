@@ -69,3 +69,7 @@ def getXY2(id):
         return {'x': x, 'y': y}
     except Exception as e:
         return None
+
+
+# res = getXY2(140)
+# print(res)

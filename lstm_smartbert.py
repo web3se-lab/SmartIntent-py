@@ -52,7 +52,7 @@ def pad(xs):
     # pad sequence to max
     for x in xs:
         while (len(x) < max):
-            x.append([1]*DIM)
+            x.append([PAD]*DIM)
         arr.append(x)
     return arr
 
