@@ -15,6 +15,7 @@ BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
 MODEL_PATH = './models/lstm_smartbert'
+DROP = 0.1
 
 
 def buildModel():
@@ -23,7 +24,7 @@ def buildModel():
         mask_value=PAD, input_shape=(None, DIM)))
     model.add(keras.layers.LSTM(UNIT, return_sequences=True))
     model.add(keras.layers.LSTM(UNIT, return_sequences=False))
-    model.add(keras.layers.Dropout(.5))
+    model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
     return model

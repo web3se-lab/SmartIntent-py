@@ -17,6 +17,7 @@ BATCH_SIZE = 20
 EPOCH = 50
 MAX_SEQ = 256
 MODEL_PATH = './models/lstm'
+DROP = 0.1
 
 
 def buildModel():
@@ -28,7 +29,7 @@ def buildModel():
     model.add(keras.layers.Reshape((-1, DIM)))
     model.add(keras.layers.LSTM(UNIT, return_sequences=True))
     model.add(keras.layers.LSTM(UNIT, return_sequences=False))
-    model.add(keras.layers.Dropout(.5))
+    model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
     return model

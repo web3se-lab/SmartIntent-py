@@ -3,7 +3,7 @@ from tensorflow import keras
 import dataset as db
 import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 argv = sys.argv[1:]
 
 
@@ -14,7 +14,7 @@ PAD = 0.0
 BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
-MODEL_PATH = './models/bilstm_smartbert'
+MODEL_PATH = './models/rnn_smartbert'
 DROP = 0.1
 
 
@@ -22,10 +22,8 @@ def buildModel():
     model = keras.Sequential()
     model.add(keras.layers.Masking(
         mask_value=PAD, input_shape=(None, DIM)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=True)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=False)))
+    model.add(keras.layers.RNN(UNIT, return_sequences=True))
+    model.add(keras.layers.RNN(UNIT, return_sequences=False))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()

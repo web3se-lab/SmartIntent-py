@@ -17,6 +17,7 @@ BATCH_SIZE = 20
 EPOCH = 50
 MAX_SEQ = 256
 MODEL_PATH = './models/bilstm'
+DROP = 0.1
 
 
 def buildModel():
@@ -30,7 +31,7 @@ def buildModel():
         keras.layers.LSTM(units=UNIT, return_sequences=True)))
     model.add(keras.layers.Bidirectional(
         keras.layers.LSTM(units=UNIT, return_sequences=False)))
-    model.add(keras.layers.Dropout(.5))
+    model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
     return model
