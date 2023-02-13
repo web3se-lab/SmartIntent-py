@@ -17,7 +17,7 @@ BATCH_SIZE = 20
 EPOCH = 50
 MAX_SEQ = 256
 MODEL_PATH = './models/lstm'
-DROP = 0.1
+DROP = 0.5  # best is 0.5
 
 
 def buildModel():
