@@ -14,8 +14,8 @@ PAD = 0.0
 BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
-MODEL_PATH = './models/smartbert_concat_bilstm'
-DROP = 0.1
+MODEL_PATH = './models/smartbert_bilstm_concat'
+DROP = 0.2
 
 
 # concat average + max embedding
@@ -24,9 +24,7 @@ def buildModel():
     model.add(keras.layers.Masking(
         mask_value=PAD, input_shape=(None, DIM*2)))
     model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=True)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=False)))
+        keras.layers.LSTM(UNIT, return_sequences=False)))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()

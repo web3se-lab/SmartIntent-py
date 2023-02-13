@@ -7,7 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 argv = sys.argv[1:]
 
 
-UNIT = 64
+UNIT = 128
 DIM = 768
 VOC = 50264
 PAD = 0.0
@@ -15,15 +15,13 @@ BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
 MODEL_PATH = './models/bilstm_smartbert'
-DROP = 0.1
+DROP = 0.2
 
 
 def buildModel():
     model = keras.Sequential()
     model.add(keras.layers.Masking(
         mask_value=PAD, input_shape=(None, DIM)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=True)))
     model.add(keras.layers.Bidirectional(
         keras.layers.LSTM(units=UNIT, return_sequences=False)))
     model.add(keras.layers.Dropout(DROP))
