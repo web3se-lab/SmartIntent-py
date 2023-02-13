@@ -3,7 +3,7 @@ from tensorflow import keras
 import dataset as db
 import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 argv = sys.argv[1:]
 
 
@@ -14,18 +14,17 @@ PAD = 0.0
 BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
-MODEL_PATH = './models/smartbert_concat_bilstm'
+MODEL_PATH = './models/smartbert_lstm_concat'
 DROP = 0.1
 
 
+# concat average + max embedding
 def buildModel():
     model = keras.Sequential()
     model.add(keras.layers.Masking(
         mask_value=PAD, input_shape=(None, DIM*2)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=True)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=False)))
+    model.add(keras.layers.LSTM(UNIT, return_sequences=True))
+    model.add(keras.layers.LSTM(UNIT, return_sequences=False))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()

@@ -1,7 +1,7 @@
 import pymysql
 import json
 
-HOST = '10.144.1.1'
+HOST = '192.168.41.46'
 DATABASE = 'web3'
 USER = 'web3'
 PASSWORD = 'web3'
@@ -57,18 +57,20 @@ def getXY2(id):
     try:
         cursor.execute(sql)
         res = cursor.fetchall()
+
+        # average embedding
         data = json.loads(res[0][2])
         x = []
-        # average embedding
         for i in data:
             for j in data[i]:
                 x.append(data[i][j])
+        # max embedding
         data = json.loads(res[0][4])
         x2 = []
-        # max embedding
         for i in data:
             for j in data[i]:
                 x2.append(data[i][j])
+        # y
         scams = json.loads(res[0][3])
         y = [0] * 10
         for item in scams:
