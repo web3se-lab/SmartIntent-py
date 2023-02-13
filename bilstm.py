@@ -7,7 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
 
-UNIT = 64
+UNIT = 128
 DIM = 768
 VOC = 50264
 PAD = 1
@@ -27,10 +27,9 @@ def buildModel():
     model.add(keras.layers.Embedding(input_dim=VOC, output_dim=DIM))
     model.add(keras.layers.AveragePooling2D(pool_size=(1, PAD_TKN)))
     model.add(keras.layers.Reshape((-1, DIM)))
+    # model.add(keras.layers.Bidirectional(keras.layers.LSTM(units=UNIT, return_sequences=True)))
     model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=True)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(units=UNIT, return_sequences=False)))
+        keras.layers.LSTM(UNIT, return_sequences=False)))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
