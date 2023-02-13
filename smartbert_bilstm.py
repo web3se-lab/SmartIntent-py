@@ -14,7 +14,7 @@ PAD = 0.0
 BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
-MODEL_PATH = './models/bilstm_smartbert'
+MODEL_PATH = './models/smartbert_bilstm'
 DROP = 0.2
 
 
