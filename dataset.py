@@ -53,20 +53,27 @@ def getXY(id):
 
 # for my model with pre-trained smartbert embeddings
 def getXY2(id):
-    sql = "SELECT c.Id, c.ContractAddress, c.Embedding, t.Scams FROM contracts AS c INNER JOIN tokens AS t on c.ContractAddress=t.ContractAddress WHERE c.Id=%d" % id
+    sql = "SELECT c.Id, c.ContractAddress, c.Embedding, t.Scams, c.EmbeddingMax FROM contracts AS c INNER JOIN tokens AS t on c.ContractAddress=t.ContractAddress WHERE c.Id=%d" % id
     try:
         cursor.execute(sql)
         res = cursor.fetchall()
-        tokenIds = json.loads(res[0][2])
+        data = json.loads(res[0][2])
         x = []
-        for i in tokenIds:
-            for j in tokenIds[i]:
-                x.append(tokenIds[i][j])
+        # average embedding
+        for i in data:
+            for j in data[i]:
+                x.append(data[i][j])
+        data = json.loads(res[0][4])
+        x2 = []
+        # max embedding
+        for i in data:
+            for j in data[i]:
+                x2.append(data[i][j])
         scams = json.loads(res[0][3])
         y = [0] * 10
         for item in scams:
             y[TYPE[item['type']]] = 1
-        return {'x': x, 'y': y}
+        return {'x': x, 'x2': x2, 'y': y}
     except Exception as e:
         return None
 
