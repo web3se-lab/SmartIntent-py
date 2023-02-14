@@ -7,7 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 argv = sys.argv[1:]
 
 
-UNIT = 128
+UNIT = 64
 DIM = 768
 VOC = 50264
 PAD = 0.0
