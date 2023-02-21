@@ -9,12 +9,11 @@ argv = sys.argv[1:]
 
 UNIT = 128
 DIM = 768
-VOC = 50264
 PAD = 0.0
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 50
-MODEL_PATH = './models/smartbert_lstm_concat'
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
+MODEL_PATH = './models/smartbert_concat_lstm'
 DROP = 0.2
 
 

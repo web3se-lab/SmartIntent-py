@@ -7,14 +7,13 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 argv = sys.argv[1:]
 
 
-UNIT = 128
+UNIT = 64
 DIM = 768
-VOC = 50264
 PAD = 0.0
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 50
-MODEL_PATH = './models/smartbert_bilstm_concat'
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
+MODEL_PATH = './models/smartbert_concat_bilstm'
 DROP = 0.2
 
 

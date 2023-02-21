@@ -11,11 +11,12 @@ UNIT = 128
 DIM = 768
 VOC = 50264
 PAD = 0.0
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 50
+BATCH = 80
+BATCH_SIZE = 125
+EPOCH = 100
+DROP = 0.5
+
 MODEL_PATH = './models/smartbert_lstm'
-DROP = 0.2
 
 
 def buildModel():
