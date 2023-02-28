@@ -3,7 +3,7 @@ from tensorflow import keras
 import dataset as db
 import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
 
@@ -18,23 +18,20 @@ EPOCH = 50
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
 
-MODEL_PATH = './models/cnn'
+MODEL_PATH = './models/smartbert_cnn'
 
 
 def buildModel():
-    inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
-    with tf.device('cpu:0'):
-        embedding = keras.layers.Embedding(
-            input_dim=VOC, output_dim=DIM)(inputs)
-    conv1 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=3, padding='same', activation='relu')(embedding)
-    pool1 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv1)
-    conv2 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=4, padding='same', activation='relu')(embedding)
-    pool2 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv2)
-    conv3 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=5, padding='same', activation='relu')(embedding)
-    pool3 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv3)
+    inputs = keras.layers.Input((MAX_SEQ, DIM))
+    conv1 = keras.layers.Conv1D(
+        filters=DIM, kernel_size=3, padding='same', activation='relu')(inputs)
+    pool1 = keras.layers.MaxPool1D(pool_size=(8))(conv1)
+    conv2 = keras.layers.Conv1D(
+        filters=DIM, kernel_size=4, padding='same', activation='relu')(inputs)
+    pool2 = keras.layers.MaxPool1D(pool_size=(8))(conv2)
+    conv3 = keras.layers.Conv1D(
+        filters=DIM, kernel_size=5, padding='same', activation='relu')(inputs)
+    pool3 = keras.layers.MaxPool1D(pool_size=(8))(conv3)
     concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
     flat = keras.layers.Flatten()(concat)
     drop = keras.layers.Dropout(DROP)(flat)
@@ -83,7 +80,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         print("Current Batch:", batch)
         print("Current Id:", id)
         while (len(xs) < batch_size):
-            data = db.getXY(id)
+            data = db.getXY2(id)
             id = id+1
             if (data == None):
                 continue
