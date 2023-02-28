@@ -10,8 +10,7 @@ argv = sys.argv[1:]
 UNIT = 128
 DIM = 768
 VOC = 50264
-PAD = 1
-PAD_TKN = 512
+PAD = 0.0
 BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 50
@@ -58,7 +57,7 @@ def pad(xs):
     arr = []
     for x in xs:
         while (len(x) < MAX_SEQ):
-            x.append([1]*PAD_TKN)
+            x.append([PAD]*DIM)
         arr.append(x[:MAX_SEQ])
     return arr
 
