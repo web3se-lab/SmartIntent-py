@@ -61,7 +61,7 @@ def pad(xs):
     for x in xs:
         while (len(x) < MAX_SEQ):
             x.append([1]*PAD_TKN)
-        arr.append(x[:max])
+        arr.append(x[:MAX_SEQ])
     return arr
 
 
