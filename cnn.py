@@ -58,16 +58,8 @@ def summary():
 
 def pad(xs):
     arr = []
-    # find max length of sequence
-    max = 0
     for x in xs:
-        if (len(x) > max):
-            max = len(x)
-    # pad sequence to max
-    if (max > MAX_SEQ):
-        max = MAX_SEQ
-    for x in xs:
-        while (len(x) < max):
+        while (len(x) < MAX_SEQ):
             x.append([1]*PAD_TKN)
         arr.append(x[:max])
     return arr
