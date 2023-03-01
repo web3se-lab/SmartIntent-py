@@ -7,13 +7,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
 
-UNIT = 128
 DIM = 768
 VOC = 50264
 PAD = 0.0
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 50
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
 

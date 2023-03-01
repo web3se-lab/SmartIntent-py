@@ -12,12 +12,13 @@ DIM = 768
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 50
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
 MAX_SEQ = 256
-MODEL_PATH = './models/lstm'
 DROP = 0.5  # best is 0.5
+
+MODEL_PATH = './models/lstm'
 
 
 def buildModel():

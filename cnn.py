@@ -1,20 +1,26 @@
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
-import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
 argv = sys.argv[1:]
 
 
-UNIT = 128
 DIM = 768
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 50
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
 
