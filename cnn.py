@@ -78,6 +78,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
     print("Batch:", batch)
     print("Batch Size:", batch_size)
     print("Total:", batch*batch_size)
+    print("GPU:", gpu.num_replicas_in_sync)
     while (batch > 0):
         print("Current Batch:", batch)
         print("Current Id:", id)
