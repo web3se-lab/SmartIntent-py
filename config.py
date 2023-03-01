@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-def config_gpu():
+def multi_gpu():
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         try:

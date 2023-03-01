@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 import dataset as db
 import sys
-import config_gpu
+import config
 argv = sys.argv[1:]
 
 
@@ -64,7 +64,7 @@ def pad(xs):
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    gpu = config_gpu()
+    gpu = config.multi_gpu()
     with gpu.scope():
         model = loadModel()
         model.compile(optimizer=keras.optimizers.Adam(),
