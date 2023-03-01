@@ -2,16 +2,20 @@ import tensorflow as tf
 from tensorflow import keras
 import dataset as db
 import sys
-
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
-
 argv = sys.argv[1:]
+
+
+def config_gpu():
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+        except RuntimeError as e:
+            print(e)
+    tf.debugging.set_log_device_placement(True)
+    strategy = tf.distribute.MirroredStrategy()
+    return strategy
 
 
 DIM = 768
@@ -28,26 +32,27 @@ MODEL_PATH = './models/cnn'
 
 
 def buildModel():
-    inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
-    with tf.device('cpu:0'):
+    gpu = config_gpu()
+    with gpu.scope():
+        inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
         embedding = keras.layers.Embedding(
             input_dim=VOC, output_dim=DIM)(inputs)
-    conv1 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=3, padding='same', activation='relu')(embedding)
-    pool1 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv1)
-    conv2 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=4, padding='same', activation='relu')(embedding)
-    pool2 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv2)
-    conv3 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=5, padding='same', activation='relu')(embedding)
-    pool3 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv3)
-    concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
-    flat = keras.layers.Flatten()(concat)
-    drop = keras.layers.Dropout(DROP)(flat)
-    outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
-    model = keras.Model(inputs=inputs, outputs=outputs)
-    model.summary()
-    return model
+        conv1 = keras.layers.Conv2D(
+            filters=DIM, kernel_size=3, padding='same', activation='relu')(embedding)
+        pool1 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv1)
+        conv2 = keras.layers.Conv2D(
+            filters=DIM, kernel_size=4, padding='same', activation='relu')(embedding)
+        pool2 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv2)
+        conv3 = keras.layers.Conv2D(
+            filters=DIM, kernel_size=5, padding='same', activation='relu')(embedding)
+        pool3 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv3)
+        concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
+        flat = keras.layers.Flatten()(concat)
+        drop = keras.layers.Dropout(DROP)(flat)
+        outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
+        model = keras.Model(inputs=inputs, outputs=outputs)
+        model.summary()
+        return model
 
 
 def loadModel():
