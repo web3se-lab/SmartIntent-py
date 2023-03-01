@@ -2,20 +2,8 @@ import tensorflow as tf
 from tensorflow import keras
 import dataset as db
 import sys
+import config_gpu
 argv = sys.argv[1:]
-
-
-def config_gpu():
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-        except RuntimeError as e:
-            print(e)
-    tf.debugging.set_log_device_placement(True)
-    strategy = tf.distribute.MirroredStrategy()
-    return strategy
 
 
 DIM = 768
@@ -76,21 +64,23 @@ def pad(xs):
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    model = loadModel()
-    model.compile(optimizer=keras.optimizers.Adam(),
-                  loss=keras.losses.BinaryCrossentropy(),
-                  metrics=[keras.metrics.BinaryAccuracy(),
-                           keras.metrics.Precision(),
-                           keras.metrics.Recall()])
+    gpu = config_gpu()
+    with gpu.scope():
+        model = loadModel()
+        model.compile(optimizer=keras.optimizers.Adam(),
+                      loss=keras.losses.BinaryCrossentropy(),
+                      metrics=[keras.metrics.BinaryAccuracy(),
+                               keras.metrics.Precision(),
+                               keras.metrics.Recall()])
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
     print("Total:", batch*batch_size)
     while (batch > 0):
-        xs = []
-        ys = []
         print("Current Batch:", batch)
         print("Current Id:", id)
+        xs = []
+        ys = []
         while (len(xs) < batch_size):
             data = db.getXY(id)
             id = id+1
@@ -102,10 +92,8 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         ty = tf.convert_to_tensor(ys)
         print(tx)
         print(ty)
-        gpu = config_gpu()
-        with gpu.scope():
-            model.fit(tx, ty, batch_size=batch_size,
-                      epochs=epoch, shuffle=True)
+        model.fit(tx, ty, batch_size=batch_size,
+                  epochs=epoch, shuffle=True)
         model.save(MODEL_PATH)
         batch = batch-1
 
