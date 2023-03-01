@@ -32,27 +32,25 @@ MODEL_PATH = './models/cnn'
 
 
 def buildModel():
-    gpu = config_gpu()
-    with gpu.scope():
-        inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
-        embedding = keras.layers.Embedding(
-            input_dim=VOC, output_dim=DIM)(inputs)
-        conv1 = keras.layers.Conv2D(
-            filters=DIM, kernel_size=3, padding='same', activation='relu')(embedding)
-        pool1 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv1)
-        conv2 = keras.layers.Conv2D(
-            filters=DIM, kernel_size=4, padding='same', activation='relu')(embedding)
-        pool2 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv2)
-        conv3 = keras.layers.Conv2D(
-            filters=DIM, kernel_size=5, padding='same', activation='relu')(embedding)
-        pool3 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv3)
-        concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
-        flat = keras.layers.Flatten()(concat)
-        drop = keras.layers.Dropout(DROP)(flat)
-        outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
-        model = keras.Model(inputs=inputs, outputs=outputs)
-        model.summary()
-        return model
+    inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
+    embedding = keras.layers.Embedding(
+        input_dim=VOC, output_dim=DIM)(inputs)
+    conv1 = keras.layers.Conv2D(
+        filters=DIM, kernel_size=3, padding='same', activation='relu')(embedding)
+    pool1 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv1)
+    conv2 = keras.layers.Conv2D(
+        filters=DIM, kernel_size=4, padding='same', activation='relu')(embedding)
+    pool2 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv2)
+    conv3 = keras.layers.Conv2D(
+        filters=DIM, kernel_size=5, padding='same', activation='relu')(embedding)
+    pool3 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv3)
+    concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
+    flat = keras.layers.Flatten()(concat)
+    drop = keras.layers.Dropout(DROP)(flat)
+    outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    model.summary()
+    return model
 
 
 def loadModel():
@@ -104,8 +102,10 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         ty = tf.convert_to_tensor(ys)
         print(tx)
         print(ty)
-        model.fit(tx, ty, batch_size=batch_size,
-                  epochs=epoch, shuffle=True)
+        gpu = config_gpu()
+        with gpu.scope():
+            model.fit(tx, ty, batch_size=batch_size,
+                      epochs=epoch, shuffle=True)
         model.save(MODEL_PATH)
         batch = batch-1
 
