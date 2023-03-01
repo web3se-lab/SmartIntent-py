@@ -3,7 +3,9 @@ from tensorflow import keras
 import dataset as db
 import sys
 import config
+import os
 argv = sys.argv[1:]
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5"
 
 
 DIM = 768
