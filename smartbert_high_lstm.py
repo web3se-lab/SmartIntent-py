@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
-from highlight import distance
+from highlight import compute
 import config
 import sys
 argv = sys.argv[1:]
@@ -17,7 +17,7 @@ BATCH_SIZE = 100
 EPOCH = 100
 DROP = 0.5
 
-MODEL_PATH = './models/smartbert_lstm'
+MODEL_PATH = './models/smartbert_high_lstm'
 
 
 def buildModel():
@@ -62,7 +62,7 @@ def pad(xs):
 def highlight(xs):
     arr = []
     for x in xs:
-        if (distance(x) >= DIST):
+        if (compute(x) >= DIST):
             x = [SCALE*i for i in x]
         arr.push(x)
     return arr

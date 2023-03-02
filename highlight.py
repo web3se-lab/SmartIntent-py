@@ -8,10 +8,9 @@ with open(path) as fp:
     centroids = data['centroids']
 
 
-def distance(vec):
+def compute(vec):
     min = 1
     for c in centroids:
         dis = distance.cosine(c, vec)
         if (dis < min):
             min = dis
-    return min
