@@ -9,6 +9,6 @@ def multi_gpu():
                 tf.config.experimental.set_memory_growth(gpu, True)
         except RuntimeError as e:
             print(e)
-    # strategy = tf.distribute.MultiWorkerMirroredStrategy()
-    strategy = tf.distribute.experimental.CentralStorageStrategy()
+    strategy = tf.distribute.MultiWorkerMirroredStrategy()
+    # strategy = tf.distribute.experimental.CentralStorageStrategy()
     return strategy
