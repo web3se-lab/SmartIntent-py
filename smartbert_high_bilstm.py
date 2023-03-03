@@ -1,28 +1,33 @@
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
-import os
+from highlight import compute
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
-
-UNIT = 128
+UNIT = 64
 DIM = 768
+VOC = 50264
 PAD = 0.0
-BATCH = 100
-BATCH_SIZE = 100
+BATCH = 80
+BATCH_SIZE = 125
 EPOCH = 100
-MODEL_PATH = './models/smartbert_concat_lstm'
-DROP = 0.2
+DROP = 0.5
+
+DIST = 0.2
+SCALE = 2
+
+MODEL_PATH = './models/smartbert_high_bilstm'
 
 
-# concat average + max embedding
 def buildModel():
     model = keras.Sequential()
     model.add(keras.layers.Masking(
-        mask_value=PAD, input_shape=(None, DIM*2)))
-    model.add(keras.layers.LSTM(UNIT, return_sequences=False))
+        mask_value=PAD, input_shape=(None, DIM)))
+    model.add(keras.layers.Bidirectional(
+        keras.layers.LSTM(units=UNIT, return_sequences=False)))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
@@ -57,6 +62,15 @@ def pad(xs):
     return arr
 
 
+def highlight(xs):
+    arr = []
+    for x in xs:
+        if (compute(x) >= DIST):
+            x = [SCALE*i for i in x]
+        arr.append(x)
+    return arr
+
+
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
     model = loadModel()
     model.compile(optimizer=keras.optimizers.Adam(),
@@ -69,8 +83,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
     print("Batch Size:", batch_size)
     print("Total:", batch*batch_size)
     while (batch > 0):
-        xs = []  # average
-        xs2 = []  # max
+        xs = []
         ys = []
         print("Current Batch:", batch)
         print("Current Id:", id)
@@ -79,12 +92,9 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
             id = id+1
             if (data == None):
                 continue
-            xs.append(data['x'])
-            xs2.append(data['x2'])
+            xs.append(highlight(data['x']))
             ys.append(data['y'])
         tx = tf.convert_to_tensor(pad(xs))
-        tx2 = tf.convert_to_tensor(pad(xs2))
-        tx = tf.concat([tx, tx2], -1)
         ty = tf.convert_to_tensor(ys)
         print(tx)
         print(ty)

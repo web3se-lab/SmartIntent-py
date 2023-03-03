@@ -9,8 +9,10 @@ with open(path) as fp:
 
 
 def compute(vec):
-    min = 1
+    min = 999999999
     for c in centroids:
         dis = distance.cosine(c, vec)
         if (dis < min):
             min = dis
+    print('min distance', min)
+    return min
