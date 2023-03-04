@@ -1,7 +1,8 @@
 import json
 import dataset as db
 from scipy.spatial import distance
-argv = sys.argv[1:2]
+import sys
+argv = sys.argv[1:]
 
 path = './models/kmeans-model.json'
 
@@ -11,7 +12,7 @@ with open(path) as fp:
 
 
 def compute(vec):
-    min = 999999999
+    min = 1
     for c in centroids:
         dis = distance.cosine(c, vec)
         if (dis < min):
@@ -30,4 +31,4 @@ def predict(id):
 
 
 if (argv[0] == 'predict'):
-    predict(argv[1])
+    predict(int(argv[1]))
