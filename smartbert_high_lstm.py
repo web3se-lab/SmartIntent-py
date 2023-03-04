@@ -3,8 +3,7 @@ from tensorflow import keras
 import dataset as db
 from highlight import compute
 import sys
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import config
 argv = sys.argv[1:]
 
 UNIT = 128
@@ -71,12 +70,14 @@ def highlight(xs):
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    model = loadModel()
-    model.compile(optimizer=keras.optimizers.Adam(),
-                  loss=keras.losses.BinaryCrossentropy(),
-                  metrics=[keras.metrics.BinaryAccuracy(),
-                           keras.metrics.Precision(),
-                           keras.metrics.Recall()])
+    gpu = config.multi_gpu()
+    with gpu.scope():
+        model = loadModel()
+        model.compile(optimizer=keras.optimizers.Adam(),
+                      loss=keras.losses.BinaryCrossentropy(),
+                      metrics=[keras.metrics.BinaryAccuracy(),
+                               keras.metrics.Precision(),
+                               keras.metrics.Recall()])
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
