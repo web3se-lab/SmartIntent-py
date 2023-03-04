@@ -16,7 +16,7 @@ BATCH_SIZE = 125
 EPOCH = 100
 DROP = 0.5
 
-DIST = 0.2
+DIST = 0.015
 SCALE = 2
 
 MODEL_PATH = './models/smartbert_high_lstm'
