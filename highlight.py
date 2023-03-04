@@ -14,5 +14,4 @@ def compute(vec):
         dis = distance.cosine(c, vec)
         if (dis < min):
             min = dis
-    print('min distance', min)
     return min
