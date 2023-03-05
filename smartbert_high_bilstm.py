@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
-from highlight import compute
+from highlight import rank
 import sys
 import config
 argv = sys.argv[1:]
@@ -61,15 +61,6 @@ def pad(xs):
     return arr
 
 
-def highlight(xs):
-    arr = []
-    for x in xs:
-        if (compute(x) >= DIST):
-            x = [SCALE*i for i in x]
-        arr.append(x)
-    return arr
-
-
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
     gpu = config.multi_gpu()
     with gpu.scope():
@@ -93,7 +84,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
             id = id+1
             if (data == None):
                 continue
-            xs.append(highlight(data['x']))
+            xs.append(rank(data['x']))
             ys.append(data['y'])
         tx = tf.convert_to_tensor(pad(xs))
         ty = tf.convert_to_tensor(ys)

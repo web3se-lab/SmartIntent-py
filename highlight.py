@@ -20,6 +20,26 @@ def compute(vec):
     return min
 
 
+def scale(xs, distance=0.015, scale=2):
+    arr = []
+    for x in xs:
+        if (compute(x) >= distance):
+            x = [scale*i for i in x]
+        arr.append(x)
+    return arr
+
+
+def sort(x, y):
+    if (compute(x) > compute(y)):
+        return 1
+    else:
+        return -1
+
+
+def rank(xs):
+    return xs.sort(sort)
+
+
 def predict(id):
     data = db.getXY2(id)
     xs = data['x']

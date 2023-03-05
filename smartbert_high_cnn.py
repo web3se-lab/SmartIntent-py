@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-from highlight import compute
+from highlight import scale
 import dataset as db
 import os
 import sys
@@ -95,7 +95,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
             id = id+1
             if (data == None):
                 continue
-            xs.append(highlight(data['x']))
+            xs.append(scale(data['x']))
             ys.append(data['y'])
         tx = tf.convert_to_tensor(pad(xs))
         ty = tf.convert_to_tensor(ys)
