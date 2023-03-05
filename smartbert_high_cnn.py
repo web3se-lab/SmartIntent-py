@@ -1,33 +1,44 @@
 import tensorflow as tf
 from tensorflow import keras
-import dataset as db
 from highlight import compute
+import dataset as db
+import os
 import sys
-import config
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 argv = sys.argv[1:]
 
-UNIT = 128
+
 DIM = 768
 VOC = 50264
 PAD = 0.0
-BATCH = 80
-BATCH_SIZE = 125
-EPOCH = 150
-DROP = 0.5
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
+MAX_SEQ = 256
+DROP = 0.5  # best is 0.5
 
 DIST = 0.015
 SCALE = 2
 
-MODEL_PATH = './models/smartbert_high_lstm'
+MODEL_PATH = './models/smartbert_high_cnn'
 
 
 def buildModel():
-    model = keras.Sequential()
-    model.add(keras.layers.Masking(
-        mask_value=PAD, input_shape=(None, DIM)))
-    model.add(keras.layers.LSTM(UNIT, return_sequences=False))
-    model.add(keras.layers.Dropout(DROP))
-    model.add(keras.layers.Dense(10, activation='sigmoid'))
+    inputs = keras.layers.Input((MAX_SEQ, DIM))
+    conv1 = keras.layers.Conv1D(
+        filters=DIM, kernel_size=3, padding='same', activation='relu')(inputs)
+    pool1 = keras.layers.MaxPool1D(pool_size=(8))(conv1)
+    conv2 = keras.layers.Conv1D(
+        filters=DIM, kernel_size=4, padding='same', activation='relu')(inputs)
+    pool2 = keras.layers.MaxPool1D(pool_size=(8))(conv2)
+    conv3 = keras.layers.Conv1D(
+        filters=DIM, kernel_size=5, padding='same', activation='relu')(inputs)
+    pool3 = keras.layers.MaxPool1D(pool_size=(8))(conv3)
+    concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
+    flat = keras.layers.Flatten()(concat)
+    drop = keras.layers.Dropout(DROP)(flat)
+    outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
+    model = keras.Model(inputs=inputs, outputs=outputs)
     model.summary()
     return model
 
@@ -47,16 +58,10 @@ def summary():
 
 def pad(xs):
     arr = []
-    # find max length of sequence
-    max = 0
     for x in xs:
-        if (len(x) > max):
-            max = len(x)
-    # pad sequence to max
-    for x in xs:
-        while (len(x) < max):
+        while (len(x) < MAX_SEQ):
             x.append([PAD]*DIM)
-        arr.append(x)
+        arr.append(x[:MAX_SEQ])
     return arr
 
 
@@ -70,14 +75,12 @@ def highlight(xs):
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    gpu = config.multi_gpu()
-    with gpu.scope():
-        model = loadModel()
-        model.compile(optimizer=keras.optimizers.Adam(),
-                      loss=keras.losses.BinaryCrossentropy(),
-                      metrics=[keras.metrics.BinaryAccuracy(),
-                               keras.metrics.Precision(),
-                               keras.metrics.Recall()])
+    model = loadModel()
+    model.compile(optimizer=keras.optimizers.Adam(),
+                  loss=keras.losses.BinaryCrossentropy(),
+                  metrics=[keras.metrics.BinaryAccuracy(),
+                           keras.metrics.Precision(),
+                           keras.metrics.Recall()])
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
