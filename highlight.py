@@ -31,7 +31,8 @@ def scale(xs, distance=0.015, scale=2):
 
 
 def rank(xs):
-    return xs.sort(key=cmp_to_key(lambda x, y: 1 if compute(x) > compute(y) else -1))
+    xs.sort(key=cmp_to_key(lambda x, y: 1 if compute(x) > compute(y) else -1))
+    return xs
 
 
 def predict(id):
