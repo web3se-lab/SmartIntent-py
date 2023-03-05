@@ -4,6 +4,7 @@ from highlight import scale
 import dataset as db
 import os
 import sys
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 argv = sys.argv[1:]
 

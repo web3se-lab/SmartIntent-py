@@ -1,10 +1,13 @@
+import os
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
 from highlight import rank
 import sys
 import config
+
 argv = sys.argv[1:]
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 UNIT = 128
 DIM = 768

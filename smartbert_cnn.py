@@ -1,10 +1,11 @@
+import os
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
-import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 
 DIM = 768
