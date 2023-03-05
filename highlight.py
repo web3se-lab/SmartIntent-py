@@ -1,5 +1,6 @@
 import json
 import dataset as db
+from functools import cmp_to_key
 from scipy.spatial import distance
 import sys
 argv = sys.argv[1:]
@@ -29,15 +30,8 @@ def scale(xs, distance=0.015, scale=2):
     return arr
 
 
-def sort(x, y):
-    if (compute(x) > compute(y)):
-        return 1
-    else:
-        return -1
-
-
 def rank(xs):
-    return xs.sort(sort)
+    return xs.sort(key=cmp_to_key(lambda x, y: 1 if compute(x) > compute(y) else -1))
 
 
 def predict(id):
