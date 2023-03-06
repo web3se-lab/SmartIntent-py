@@ -19,7 +19,7 @@ EPOCH = 150
 DROP = 0.2
 
 DIST = 0.015
-SCALE = 2
+SCALE = 10
 
 MODEL_PATH = './models/smartbert_high_lstm'
 
