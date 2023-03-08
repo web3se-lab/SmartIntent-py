@@ -2,33 +2,30 @@ import os
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
-from highlight import scale
 import sys
-import config
-
 argv = sys.argv[1:]
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-UNIT = 128
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
+
 DIM = 768
-VOC = 50264
 PAD = 0.0
-BATCH = 80
-BATCH_SIZE = 125
-EPOCH = 150
-DROP = 0.2
+BATCH = 100
+BATCH_SIZE = 100
+EPOCH = 100
+MAX_SEQ = 256
+DROP = 0.5  # best is 0.5
 
-DIST = 0.015
-SCALE = 10
-
-MODEL_PATH = './models/smartbert_high_lstm'
+MODEL_PATH = './models/smartbert_dense'
 
 
 def buildModel():
     model = keras.Sequential()
-    model.add(keras.layers.Masking(
-        mask_value=PAD, input_shape=(None, DIM)))
-    model.add(keras.layers.LSTM(UNIT, return_sequences=False))
+    model.add(keras.layers.Dense(
+        input_shape=(MAX_SEQ, DIM), units=768, activation='relu'))
+    # model.add(keras.layers.Dense(units=64, activation='relu'))
+    model.add(keras.layers.Flatten())
+    model.add(keras.layers.Dense(units=768, activation='relu'))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
@@ -50,28 +47,20 @@ def summary():
 
 def pad(xs):
     arr = []
-    # find max length of sequence
-    max = 0
     for x in xs:
-        if (len(x) > max):
-            max = len(x)
-    # pad sequence to max
-    for x in xs:
-        while (len(x) < max):
+        while (len(x) < MAX_SEQ):
             x.append([PAD]*DIM)
-        arr.append(x)
+        arr.append(x[:MAX_SEQ])
     return arr
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    gpu = config.multi_gpu()
-    with gpu.scope():
-        model = loadModel()
-        model.compile(optimizer=keras.optimizers.Adam(),
-                      loss=keras.losses.BinaryCrossentropy(),
-                      metrics=[keras.metrics.BinaryAccuracy(),
-                               keras.metrics.Precision(),
-                               keras.metrics.Recall()])
+    model = loadModel()
+    model.compile(optimizer=keras.optimizers.Adam(),
+                  loss=keras.losses.BinaryCrossentropy(),
+                  metrics=[keras.metrics.BinaryAccuracy(),
+                           keras.metrics.Precision(),
+                           keras.metrics.Recall()])
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
@@ -86,7 +75,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
             id = id+1
             if (data == None):
                 continue
-            xs.append(scale(data['x']))
+            xs.append(data['x'])
             ys.append(data['y'])
         tx = tf.convert_to_tensor(pad(xs))
         ty = tf.convert_to_tensor(ys)
