@@ -5,7 +5,7 @@ import dataset as db
 import sys
 argv = sys.argv[1:]
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 DIM = 768
@@ -21,11 +21,11 @@ MODEL_PATH = './models/smartbert_dense'
 
 def buildModel():
     model = keras.Sequential()
-    model.add(keras.layers.Dense(
-        input_shape=(MAX_SEQ, DIM), units=768, activation='relu'))
-    # model.add(keras.layers.Dense(units=64, activation='relu'))
+    model.add(keras.layers.Dense(input_shape=(
+        MAX_SEQ, DIM), units=DIM, activation='relu'))
+    model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Flatten())
-    model.add(keras.layers.Dense(units=768, activation='relu'))
+    model.add(keras.layers.Dense(units=DIM, activation='relu'))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
