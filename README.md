@@ -1,10 +1,12 @@
-# web3-crack-py
+# SmartIntentNN Python (Model)
 
-Python version for web3-crack
+Use Tensorflow Python to replace Tensorflow.js, for model training.
 
 ## JS Version
 
-[https://github.com/decentralizedlab/web3-crack](https://github.com/decentralizedlab/web3-crack)
+JS version is only for web tool API and model evaluation:
+
+[https://github.com/decentralizedlab/SmartIntentNN](https://github.com/decentralizedlab/SmartIntentNN)
 
 ## Install
 
@@ -15,5 +17,5 @@ pip install -r ./requirement.txt
 ## Use
 
 ```bash
-python3 ./lstm_smartbert.py train 1 2 10 1
+python3 ./lstm_smartbert.py train [batch] [start id] [batch size] [epoch]
 ```
