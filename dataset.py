@@ -1,7 +1,7 @@
 import pymysql
 import json
 
-HOST = '192.168.41.46'
+HOST = '192.168.41.33'
 DATABASE = 'web3'
 USER = 'web3'
 PASSWORD = 'web3'
