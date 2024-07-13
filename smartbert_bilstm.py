@@ -3,20 +3,20 @@ from tensorflow import keras
 import dataset as db
 import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 argv = sys.argv[1:]
 
 
-UNIT = 64
+UNIT = 128
 DIM = 768
 VOC = 50264
 PAD = 0.0
 BATCH = 100
-BATCH_SIZE = 100
+BATCH_SIZE = 200
 EPOCH = 100
-DROP = 0.2
+DROP = 0.5
 
-MODEL_PATH = './models/smartbert_bilstm'
+MODEL_PATH = './models/smartbert_bilstm.h5'
 
 
 def buildModel():
@@ -59,17 +59,20 @@ def pad(xs):
     return arr
 
 
+# From 1 to 20000
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
     model = loadModel()
     model.compile(optimizer=keras.optimizers.Adam(),
-                  loss=keras.losses.BinaryCrossentropy(),
+                  loss=keras.losses.BinaryFocalCrossentropy(),
                   metrics=[keras.metrics.BinaryAccuracy(),
                            keras.metrics.Precision(),
                            keras.metrics.Recall()])
+
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
     print("Total:", batch*batch_size)
+
     while (batch > 0):
         xs = []
         ys = []
@@ -88,12 +91,61 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         print(ty)
         model.fit(tx, ty, batch_size=batch_size,
                   epochs=epoch, shuffle=True)
-        model.save(MODEL_PATH)
         batch = batch-1
+        model.save(MODEL_PATH)
+
+
+# From 21000-30999
+def evaluate(start=21000, batch=10000):
+    model = loadModel()
+    id = start
+    print("Batch:", batch)
+    print("Start:", start)
+    xs = []
+    ys = []
+    while (batch > 0):
+        print("Current Batch:", batch)
+        print("Current Id:", id)
+        data = db.getXY2(id)
+        id = id+1
+        if (data == None):
+            continue
+
+        xs.append(data['x'])
+        ys.append(data['y'])
+        batch = batch-1
+
+    tx_eval = tf.convert_to_tensor(pad(xs))
+    ty_eval = tf.convert_to_tensor(ys)
+
+    # Make predictions on the evaluation data
+    # Device context manager
+    y_pred = model.predict(tx_eval)
+
+    # Convert the predictions to binary labels
+    y_pred_binary = tf.round(y_pred)
+    print(ty_eval)
+    print(y_pred_binary)
+
+    # Compute the evaluation metrics
+    accuracy = keras.metrics.BinaryAccuracy()(ty_eval, y_pred_binary)
+    precision = keras.metrics.Precision()(ty_eval, y_pred_binary)
+    recall = keras.metrics.Recall()(ty_eval, y_pred_binary)
+    f1 = 2 * (precision * recall) / (precision + recall)
+
+    print("==========================================================")
+    print("Total")
+    # Print the evaluation metrics
+    print("Accuracy:", accuracy)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("==========================================================")
 
 
 if (argv[0] == 'summary'):
     summary()
 if (argv[0] == 'train'):
-    train(batch=int(argv[1]), start=int(argv[2]),
-          batch_size=int(argv[3]), epoch=int(argv[4]))
+    train()
+if (argv[0] == 'evaluate'):
+    evaluate()

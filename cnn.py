@@ -2,39 +2,43 @@ import tensorflow as tf
 from tensorflow import keras
 import dataset as db
 import sys
-import config
 argv = sys.argv[1:]
+
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 DIM = 768
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
-BATCH = 100
-BATCH_SIZE = 100
-EPOCH = 100
+BATCH = 50
+BATCH_SIZE = 200
+EPOCH = 1
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
 
-MODEL_PATH = './models/cnn'
+MODEL_PATH = './models/cnn.h5'
 
 
 def buildModel():
     inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
-    embedding = keras.layers.Embedding(
-        input_dim=VOC, output_dim=DIM)(inputs)
-    conv1 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=3, padding='same', activation='relu')(embedding)
-    pool1 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv1)
-    conv2 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=4, padding='same', activation='relu')(embedding)
-    pool2 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv2)
-    conv3 = keras.layers.Conv2D(
-        filters=DIM, kernel_size=5, padding='same', activation='relu')(embedding)
-    pool3 = keras.layers.MaxPool2D(pool_size=(8, 8))(conv3)
-    concat = keras.layers.Concatenate(axis=-1)([pool1, pool2, pool3])
-    flat = keras.layers.Flatten()(concat)
-    drop = keras.layers.Dropout(DROP)(flat)
+    embedding = keras.layers.Embedding(input_dim=VOC, output_dim=DIM)(inputs)
+    avg = keras.layers.AveragePooling2D(pool_size=(1, PAD_TKN))(embedding)
+    reshape = keras.layers.Reshape((-1, DIM))(avg)
+    conv1 = keras.layers.Conv1D(
+        filters=64, kernel_size=3, padding='same', activation='relu')(reshape)
+    pool1 = keras.layers.MaxPool1D(pool_size=(2))(conv1)
+    conv2 = keras.layers.Conv1D(
+        filters=128, kernel_size=4, padding='same', activation='relu')(pool1)
+    pool2 = keras.layers.MaxPool1D(pool_size=(2))(conv2)
+    conv3 = keras.layers.Conv1D(
+        filters=256, kernel_size=5, padding='same', activation='relu')(pool2)
+    pool3 = keras.layers.MaxPool1D(pool_size=(2))(conv3)
+    flat = keras.layers.Flatten()(pool3)
+    dense = keras.layers.Dense(64, activation='relu')(flat)
+    drop = keras.layers.Dropout(DROP)(dense)
     outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
     model = keras.Model(inputs=inputs, outputs=outputs)
     model.summary()
@@ -64,19 +68,17 @@ def pad(xs):
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    gpu = config.multi_gpu()
-    with gpu.scope():
-        model = loadModel()
-        model.compile(optimizer=keras.optimizers.Adam(),
-                      loss=keras.losses.BinaryCrossentropy(),
-                      metrics=[keras.metrics.BinaryAccuracy(),
-                               keras.metrics.Precision(),
-                               keras.metrics.Recall()])
+    model = loadModel()
+    model.compile(optimizer=keras.optimizers.Adam(),
+                  loss=keras.losses.BinaryCrossentropy(),
+                  metrics=[keras.metrics.BinaryAccuracy(),
+                           keras.metrics.Precision(),
+                           keras.metrics.Recall()])
+
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
     print("Total:", batch*batch_size)
-    print("GPU:", gpu.num_replicas_in_sync)
     while (batch > 0):
         print("Current Batch:", batch)
         print("Current Id:", id)
@@ -95,12 +97,60 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         print(ty)
         model.fit(tx, ty, batch_size=batch_size,
                   epochs=epoch, shuffle=True)
-        model.save(MODEL_PATH)
         batch = batch-1
+        model.save(MODEL_PATH)
+
+
+def evaluate(start=20000, batch=10000):
+    model = loadModel()
+    id = start
+    print("Batch:", batch)
+    print("Start:", start)
+    xs = []
+    ys = []
+    while (batch > 0):
+        print("Current Batch:", batch)
+        print("Current Id:", id)
+        data = db.getXY(id)
+        id = id+1
+        if (data == None):
+            continue
+
+        xs.append(data['x'])
+        ys.append(data['y'])
+        batch = batch-1
+
+    tx_eval = tf.convert_to_tensor(pad(xs))
+    ty_eval = tf.convert_to_tensor(ys)
+
+    # Make predictions on the evaluation data
+    # Device context manager
+    y_pred = model.predict(tx_eval)
+
+    # Convert the predictions to binary labels
+    y_pred_binary = tf.round(y_pred)
+    print(ty_eval)
+    print(y_pred_binary)
+
+    # Compute the evaluation metrics
+    accuracy = keras.metrics.BinaryAccuracy()(ty_eval, y_pred_binary)
+    precision = keras.metrics.Precision()(ty_eval, y_pred_binary)
+    recall = keras.metrics.Recall()(ty_eval, y_pred_binary)
+    f1 = 2 * (precision * recall) / (precision + recall)
+
+    print("==========================================================")
+    print("Total")
+    # Print the evaluation metrics
+    print("Accuracy:", accuracy)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("==========================================================")
 
 
 if (argv[0] == 'summary'):
     summary()
 if (argv[0] == 'train'):
-    train(batch=int(argv[1]), start=int(argv[2]),
-          batch_size=int(argv[3]), epoch=int(argv[4]))
+    train()
+if (argv[0] == 'evaluate'):
+    evaluate()

@@ -3,22 +3,22 @@ from tensorflow import keras
 import dataset as db
 import sys
 import os
-import config
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
-UNIT = 128
-DIM = 768
+
+UNIT = 64
+DIM = 16
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
 BATCH = 500
-BATCH_SIZE = 40
+BATCH_SIZE = 20
 EPOCH = 100
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
-MODEL_PATH = './models/bilstm.h5'
+
+MODEL_PATH = './models/lstm_word.h5'
 
 
 def buildModel():
@@ -26,11 +26,9 @@ def buildModel():
     model.add(keras.layers.Masking(
         mask_value=PAD, input_shape=(None, PAD_TKN)))
     model.add(keras.layers.Embedding(input_dim=VOC, output_dim=DIM))
-    model.add(keras.layers.AveragePooling2D(pool_size=(1, PAD_TKN)))
-    model.add(keras.layers.Reshape((-1, DIM)))
-    # model.add(keras.layers.Bidirectional(keras.layers.LSTM(units=UNIT, return_sequences=True)))
-    model.add(keras.layers.Bidirectional(
-        keras.layers.LSTM(UNIT, return_sequences=False)))
+    model.add(tf.keras.layers.Reshape((-1, DIM*PAD_TKN)))
+    # model.add(keras.layers.LSTM(UNIT, return_sequences=True))
+    model.add(keras.layers.LSTM(UNIT, return_sequences=False))
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
@@ -68,14 +66,13 @@ def pad(xs):
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    gpu = config.multi_gpu()
-    with gpu.scope():
-        model = loadModel()
-        model.compile(optimizer=keras.optimizers.Adam(),
-                      loss=keras.losses.BinaryFocalCrossentropy(),
-                      metrics=[keras.metrics.BinaryAccuracy(),
-                               keras.metrics.Precision(),
-                               keras.metrics.Recall()])
+    model = loadModel()
+    model.compile(optimizer=keras.optimizers.Adamax(),
+                  loss=keras.losses.BinaryFocalCrossentropy(),
+                  metrics=[keras.metrics.BinaryAccuracy(),
+                           keras.metrics.Precision(),
+                           keras.metrics.Recall()])
+
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
@@ -102,7 +99,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         batch = batch-1
 
 
-def evaluate(start=21000, batch=10000):
+def evaluate(start=20000, batch=1000):
     model = loadModel()
     id = start
     print("Batch:", batch)
