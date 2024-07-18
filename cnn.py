@@ -1,21 +1,19 @@
 import tensorflow as tf
 from tensorflow import keras
+from keras import layers, models
 import dataset as db
 import sys
+import os
 argv = sys.argv[1:]
-
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 DIM = 768
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
-BATCH = 50
-BATCH_SIZE = 200
-EPOCH = 1
+BATCH = 500
+BATCH_SIZE = 20
+EPOCH = 100
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
 
@@ -23,24 +21,33 @@ MODEL_PATH = './models/cnn.h5'
 
 
 def buildModel():
-    inputs = keras.layers.Input((MAX_SEQ, PAD_TKN))
-    embedding = keras.layers.Embedding(input_dim=VOC, output_dim=DIM)(inputs)
-    avg = keras.layers.AveragePooling2D(pool_size=(1, PAD_TKN))(embedding)
-    reshape = keras.layers.Reshape((-1, DIM))(avg)
-    conv1 = keras.layers.Conv1D(
-        filters=64, kernel_size=3, padding='same', activation='relu')(reshape)
-    pool1 = keras.layers.MaxPool1D(pool_size=(2))(conv1)
-    conv2 = keras.layers.Conv1D(
-        filters=128, kernel_size=4, padding='same', activation='relu')(pool1)
-    pool2 = keras.layers.MaxPool1D(pool_size=(2))(conv2)
-    conv3 = keras.layers.Conv1D(
-        filters=256, kernel_size=5, padding='same', activation='relu')(pool2)
-    pool3 = keras.layers.MaxPool1D(pool_size=(2))(conv3)
-    flat = keras.layers.Flatten()(pool3)
-    dense = keras.layers.Dense(64, activation='relu')(flat)
-    drop = keras.layers.Dropout(DROP)(dense)
-    outputs = keras.layers.Dense(10, activation='sigmoid')(drop)
-    model = keras.Model(inputs=inputs, outputs=outputs)
+
+    model = models.Sequential()
+
+    model.add(keras.layers.Input((MAX_SEQ, PAD_TKN)))
+    # Embedding layer
+    model.add(layers.Embedding(input_dim=VOC, output_dim=DIM))
+    model.add(layers.AveragePooling2D(pool_size=(1, PAD_TKN)))
+
+    # Reshape layer to fit Conv1D input
+    model.add(layers.Reshape((-1, DIM)))
+
+    # First convolutional layer
+    model.add(layers.Conv1D(filters=64, kernel_size=3,
+              padding='same', activation='relu'))
+
+    # Adding a MaxPooling layer to reduce dimensionality
+    model.add(layers.MaxPooling1D(pool_size=256))
+
+    # Dropout layer
+    model.add(layers.Dropout(DROP))
+    # Flatten the results to feed into a dense layer
+    model.add(layers.Flatten())
+
+    # model.add(layers.Dense(64, activation='relu'))
+    # Output layer (for multi-class classification, use sigmoid or softmax depending on the number of classes)
+    # assuming binary classification (2 classes)
+    model.add(layers.Dense(10, activation='sigmoid'))
     model.summary()
     return model
 

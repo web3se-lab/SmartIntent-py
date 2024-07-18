@@ -4,7 +4,7 @@ import dataset as db
 import sys
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 argv = sys.argv[1:]
 
 UNIT = 128
@@ -12,7 +12,7 @@ DIM = 768
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
-BATCH = 1000
+BATCH = 500
 BATCH_SIZE = 20
 EPOCH = 100
 MAX_SEQ = 256
@@ -92,7 +92,7 @@ def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
         batch = batch-1
 
 
-def evaluate(start=21000, batch=10000):
+def evaluate(start=20000, batch=10000):
     model = loadModel()
     id = start
     print("Batch:", batch)
