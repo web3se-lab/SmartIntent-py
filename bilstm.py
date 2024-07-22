@@ -1,38 +1,40 @@
 import tensorflow as tf
 from tensorflow import keras
+from keras import layers, models
 import dataset as db
 import sys
 import os
 import config
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
-UNIT = 128
-DIM = 768
+UNIT = 64
+DIM = 512
 VOC = 50264
 PAD = 1
 PAD_TKN = 512
-BATCH = 500
-BATCH_SIZE = 20
-EPOCH = 100
+BATCH = 200
+BATCH_SIZE = 50
+EPOCH = 50
 MAX_SEQ = 256
 DROP = 0.5  # best is 0.5
 MODEL_PATH = './models/bilstm.h5'
 
 
 def buildModel():
-    model = keras.Sequential()
-    model.add(keras.layers.Masking(
-        mask_value=PAD, input_shape=(None, PAD_TKN)))
-    model.add(keras.layers.Embedding(input_dim=VOC, output_dim=DIM))
-    model.add(keras.layers.AveragePooling2D(pool_size=(1, PAD_TKN)))
-    model.add(keras.layers.Reshape((-1, DIM)))
-    # model.add(keras.layers.Bidirectional(keras.layers.LSTM(units=UNIT, return_sequences=True)))
+    model = models.Sequential()
+    model.add(layers.Input((MAX_SEQ, PAD_TKN)))
+    model.add(layers.Masking(PAD))
+    # model.add(layers.Embedding(input_dim=VOC, output_dim=DIM, mask_zero=True))
+    # model.add(layers.AveragePooling2D(pool_size=(1, PAD_TKN)))
+    # model.add(layers.Reshape((MAX_SEQ, DIM)))
+    model.add(keras.layers.Bidirectional(
+        keras.layers.LSTM(UNIT, return_sequences=True)))
     model.add(keras.layers.Bidirectional(
         keras.layers.LSTM(UNIT, return_sequences=False)))
-    model.add(keras.layers.Dropout(DROP))
-    model.add(keras.layers.Dense(10, activation='sigmoid'))
+    model.add(layers.Dropout(DROP))  # Dropout 层
+    model.add(layers.Dense(10, activation='sigmoid'))  # 输出层
     model.summary()
     return model
 
@@ -52,30 +54,20 @@ def summary():
 
 def pad(xs):
     arr = []
-    # find max length of sequence
-    max = 0
     for x in xs:
-        if (len(x) > max):
-            max = len(x)
-    # pad sequence to max
-    if (max > MAX_SEQ):
-        max = MAX_SEQ
-    for x in xs:
-        while (len(x) < max):
-            x.append([1]*PAD_TKN)
-        arr.append(x[:max])
+        while len(x) < MAX_SEQ:
+            x.append([PAD] * PAD_TKN)
+        arr.append(x[:MAX_SEQ])
     return arr
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    gpu = config.multi_gpu()
-    with gpu.scope():
-        model = loadModel()
-        model.compile(optimizer=keras.optimizers.Adam(),
-                      loss=keras.losses.BinaryFocalCrossentropy(),
-                      metrics=[keras.metrics.BinaryAccuracy(),
-                               keras.metrics.Precision(),
-                               keras.metrics.Recall()])
+    model = loadModel()
+    model.compile(optimizer=keras.optimizers.Adam(),
+                  loss=keras.losses.BinaryCrossentropy(),
+                  metrics=[keras.metrics.BinaryAccuracy(),
+                           keras.metrics.Precision(),
+                           keras.metrics.Recall()])
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
