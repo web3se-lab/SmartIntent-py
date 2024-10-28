@@ -1,5 +1,8 @@
 import pymysql
 import json
+import tensorflow as tf
+from tensorflow.keras import backend as K
+
 
 HOST = '192.168.41.45'
 DATABASE = 'web3'
@@ -20,41 +23,36 @@ TYPE = {
     'maxSell': 9
 }
 
-db = pymysql.connect(
-    host=HOST,
-    database=DATABASE,
-    user=USER,
-    password=PASSWORD,
-    port=PORT,
-    charset=CHARSET
-)
+WEIGHT = [1, 5, 5, 1, 1, 10, 20, 10, 20, 20]
+
+
+def weighted_binary_crossentropy(weights):
+    def w_binary_crossentropy(y_true, y_pred):
+        weights_v = tf.constant(weights, dtype=tf.float32)
+        bce = K.binary_crossentropy(y_true, y_pred)
+        weighted_bce = bce * weights_v
+        return K.mean(weighted_bce, axis=-1)
+    return w_binary_crossentropy
+
+
+# 使用权重数组创建损失函数
+loss_fn = weighted_binary_crossentropy(WEIGHT)
+
+db = pymysql.connect(host=HOST, database=DATABASE, user=USER,
+                     password=PASSWORD, port=PORT, charset=CHARSET)
 
 cursor = db.cursor()
 
 
-def getXY(id):
-    sql = "SELECT t.Id, t.ContractId, c.Id, c.ContractAddress, c.TokenIds, t.Scams FROM tokens AS t INNER JOIN contracts AS c on t.ContractId=c.Id WHERE t.Id=%d" % id
-    try:
-        cursor.execute(sql)
-        res = cursor.fetchall()
-        tokenIds = json.loads(res[0][4])
-        x = []
-        for i in tokenIds:
-            for j in tokenIds[i]:
-                x.append(tokenIds[i][j]['ids'])
-        scams = json.loads(res[0][5])
-        y = [0] * 10
-        for item in scams:
-            y[TYPE[item['type']]] = 1
-        return {'x': x, 'y': y}
-    except Exception as e:
-        print(e)
-        return None
+# Get data one by one
+def getOne(id):
+    sql = """
+    SELECT t.Id, t.ContractId, c.Id, c.ContractAddress, c.Embedding2, t.Scams
+    FROM tokens AS t
+    INNER JOIN contracts AS c on t.ContractId=c.Id
+    WHERE t.Id=%d;
+    """ % id
 
-
-# for my model with pre-trained smartbert embeddings
-def getXY2(id):
-    sql = "SELECT t.Id, t.ContractId, c.Id, c.ContractAddress, c.Embedding, t.Scams FROM tokens AS t INNER JOIN contracts AS c on t.ContractId=c.Id WHERE t.Id=%d" % id
     try:
         cursor.execute(sql)
         res = cursor.fetchall()
@@ -75,5 +73,67 @@ def getXY2(id):
         return None
 
 
-# res = getXY2(140)
-# print(res)
+# Get batch of data
+def getBatch(start_id, n):
+    sql = """
+    SELECT t.Id, t.ContractId, c.Id, c.ContractAddress, c.Embedding2, t.Scams
+    FROM tokens AS t
+    INNER JOIN contracts AS c ON t.ContractId = c.Id
+    WHERE t.Id>=%d
+    LIMIT %d;
+    """ % (start_id, n)
+
+    try:
+        cursor.execute(sql)
+        res = cursor.fetchall()
+
+        # Initialize x and y arrays
+        x_all, y_all = [], []
+        max_id = start_id  # Initialize max_id with start_id
+
+        for row in res:
+            try:
+                # Update max_id to the current row's t.Id if it's greater
+                if row[0] > max_id:
+                    max_id = row[0]
+
+                # Check if data is null
+                if row[4] is None:
+                    print(f"ID: {row[0]} - Embedding data is null")
+                    continue
+
+                # Parse embedding data
+                data = json.loads(row[4])
+
+                x = []
+                for data_i in data.values():
+                    x.extend(data_i.values())
+
+                # Parse scams data
+                scams = json.loads(row[5])
+                y = [0] * 10
+                for item in scams:
+                    y[TYPE[item['type']]] = 1
+
+                x_all.append(x)
+                y_all.append(y)
+
+            except (json.JSONDecodeError, KeyError) as e:
+                # Handle JSON parsing or key related errors
+                print(f"ID: {row[0]} - Error parsing JSON or missing key: {e}")
+            except Exception as e:
+                # Handle any other exceptions
+                print(f"ID: {row[0]} - An unexpected error occurred: {e}")
+
+        return x_all, y_all, max_id
+
+    except Exception as e:
+        # Top-level exception handling for cursor operations
+        print(f"Database operation failed: {e}")
+        return [], [], start_id
+
+
+'''
+res = getXY2(1, 1)
+print(res)
+'''

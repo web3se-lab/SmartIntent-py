@@ -1,4 +1,6 @@
 tensorflow[and-cuda]
 tensorflowjs
 pymysql
+imbalanced-learn===0.12.4
 scipy
+scikit-learn

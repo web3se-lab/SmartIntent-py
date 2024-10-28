@@ -1,30 +1,32 @@
 import tensorflow as tf
 from tensorflow import keras
 import dataset as db
+import dataset_ljw as db2
 import os
 import sys
-import config
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 argv = sys.argv[1:]
 
 
 UNIT = 128
-DIM = 768
-VOC = 50264
-PAD = 0.0
-BATCH = 100
+BATCH = 80
 BATCH_SIZE = 200
 EPOCH = 100
 DROP = 0.5
+MAX_SEQ = 256
+DIM = 768
+PAD = 0.0
 
-MODEL_PATH = './models/smartbert_lstm.h5'
+MODEL_PATH = './models/smartbert_lstm.keras'
 
 
 def buildModel():
     model = keras.Sequential()
     model.add(keras.layers.Masking(
-        mask_value=PAD, input_shape=(None, DIM)))
+        mask_value=PAD, input_shape=(MAX_SEQ, DIM)))
     model.add(keras.layers.LSTM(UNIT, return_sequences=False))
+    # model.add(keras.layers.LayerNormalization())
     model.add(keras.layers.Dropout(DROP))
     model.add(keras.layers.Dense(10, activation='sigmoid'))
     model.summary()
@@ -46,82 +48,148 @@ def summary():
 
 def pad(xs):
     arr = []
-    # find max length of sequence
-    max = 0
     for x in xs:
-        if (len(x) > max):
-            max = len(x)
-    # pad sequence to max
-    for x in xs:
-        while (len(x) < max):
-            x.append([PAD]*DIM)
-        arr.append(x)
+        while len(x) < MAX_SEQ:
+            x.append([PAD] * DIM)
+        arr.append(x[:MAX_SEQ])
     return arr
 
 
 def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
     model = loadModel()
-    model.compile(optimizer=keras.optimizers.Adam(),
-                  loss=keras.losses.BinaryFocalCrossentropy(),
-                  metrics=[keras.metrics.BinaryAccuracy(),
-                           keras.metrics.Precision(),
-                           keras.metrics.Recall()])
+
+    model.compile(
+        optimizer=keras.optimizers.Adam(),
+        loss=keras.losses.BinaryFocalCrossentropy(),
+        metrics=[
+            keras.metrics.BinaryAccuracy(),
+            keras.metrics.Precision(),
+            keras.metrics.Recall()
+        ]
+    )
+
     id = start
     print("Batch:", batch)
     print("Batch Size:", batch_size)
-    print("Total:", batch*batch_size)
-    while (batch > 0):
-        xs = []
-        ys = []
+    print("Total:", batch * batch_size)
+
+    tensorboard_callback = keras.callbacks.TensorBoard(
+        log_dir="./logs", histogram_freq=1)
+    # 动态学习率调度
+    lr_schedule = keras.callbacks.ReduceLROnPlateau(
+        monitor='val_loss', factor=0.2, patience=3, min_delta=0.001)
+    # 早停机制
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor='loss', min_delta=0.0005, patience=10, restore_best_weights=True)
+
+    callbacks = [tensorboard_callback]
+
+    while batch > 0:
         print("Current Batch:", batch)
-        print("Current Id:", id)
-        while (len(xs) < batch_size):
-            data = db.getXY2(id)
-            id = id+1
-            if (data == None):
-                continue
-            xs.append(data['x'])
-            ys.append(data['y'])
-        tx = tf.convert_to_tensor(pad(xs))
-        ty = tf.convert_to_tensor(ys)
+        print("Start Id:", id)
+        x, y, id = db.getBatch(id, batch_size)
+        print("End Id:", id)
+
+        tx = tf.convert_to_tensor(pad(x))
+        ty = tf.convert_to_tensor(y)
         print(tx)
         print(ty)
-        model.fit(tx, ty, batch_size=batch_size,
-                  epochs=epoch, shuffle=True)
-        batch = batch-1
+
+        model.fit(tx, ty, batch_size=batch_size, epochs=epoch,
+                  shuffle=True, callbacks=callbacks)
+
+        batch -= 1
+        id += 1
         model.save(MODEL_PATH)
 
 
-def evaluate(start=21000, batch=10000):
+def train_balance(batch=20, epoch=100, start=1, end=17197):
     model = loadModel()
+
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.00001),
+        loss=keras.losses.BinaryFocalCrossentropy(),
+        metrics=[
+            keras.metrics.BinaryAccuracy(),
+            keras.metrics.Precision(),
+            keras.metrics.Recall()
+        ]
+    )
+
     id = start
     print("Batch:", batch)
-    print("Start:", start)
-    xs = []
-    ys = []
-    while (batch > 0):
+
+    tensorboard_callback = keras.callbacks.TensorBoard(
+        log_dir="./logs", histogram_freq=1)
+
+    callbacks = [tensorboard_callback]
+
+    while batch > 0:
         print("Current Batch:", batch)
-        print("Current Id:", id)
-        data = db.getXY2(id)
-        id = id+1
-        if (data == None):
-            continue
+        print("Start Id:", id)
+        x, y, id = db2.getBatch_v2(start, end)
+        print("End Id:", id)
 
-        xs.append(data['x'])
-        ys.append(data['y'])
-        batch = batch-1
+        tx = tf.convert_to_tensor(pad(x))
+        ty = tf.convert_to_tensor(y)
+        print(tx)
+        print(ty)
 
-    tx_eval = tf.convert_to_tensor(pad(xs))
-    ty_eval = tf.convert_to_tensor(ys)
+        model.fit(tx, ty, epochs=epoch, shuffle=True, callbacks=callbacks)
 
-    # Make predictions on the evaluation data
-    # Device context manager
+        batch -= 1
+        model.save(MODEL_PATH)
+
+
+def evaluate(start=20000, batch=10000):
+    model = loadModel()
+    print("Batch:", batch)
+    print("Start:", start)
+    x, y, id = db.getBatch(start, batch)
+    print("End:", id)
+
+    tx_eval = tf.convert_to_tensor(pad(x))
+    ty_eval = tf.convert_to_tensor(y)
+
     y_pred = model.predict(tx_eval)
-
-    # Convert the predictions to binary labels
     y_pred_binary = tf.round(y_pred)
-    print(ty_eval)
-    print(y_pred_binary)
+
+    # 初始化每个类别的指标列表
+    category_accuracy = []
+    category_precision = []
+    category_recall = []
+    category_f1 = []
+
+    # 对每个类别计算指标
+    for category, index in db.TYPE.items():
+        accuracy = keras.metrics.BinaryAccuracy()(
+            ty_eval[:, index], y_pred_binary[:, index])
+        precision = keras.metrics.Precision()(
+            ty_eval[:, index], y_pred_binary[:, index])
+        recall = keras.metrics.Recall()(
+            ty_eval[:, index], y_pred_binary[:, index])
+        f1 = 2 * (precision * recall) / (precision +
+                                         recall + keras.backend.epsilon())
+
+        category_accuracy.append(accuracy.numpy())
+        category_precision.append(precision.numpy())
+        category_recall.append(recall.numpy())
+        category_f1.append(f1.numpy())
+
+        print(f"Category '{category}':")
+        print("Accuracy:", category_accuracy[-1])
+        print("Precision:", category_precision[-1])
+        print("Recall:", category_recall[-1])
+        print("F1 Score:", category_f1[-1])
+        print("----------------------------------------------------------")
+
+    print("==========================================================")
+    print("Average Metrics")
+    print("Accuracy:", sum(category_accuracy) / len(db.TYPE))
+    print("Precision:", sum(category_precision) / len(db.TYPE))
+    print("Recall:", sum(category_recall) / len(db.TYPE))
+    print("F1 Score:", sum(category_f1) / len(db.TYPE))
+    print("==========================================================")
 
     # Compute the evaluation metrics
     accuracy = keras.metrics.BinaryAccuracy()(ty_eval, y_pred_binary)
@@ -130,7 +198,7 @@ def evaluate(start=21000, batch=10000):
     f1 = 2 * (precision * recall) / (precision + recall)
 
     print("==========================================================")
-    print("Total")
+    print("Total Metrics")
     # Print the evaluation metrics
     print("Accuracy:", accuracy)
     print("Precision:", precision)
@@ -139,9 +207,11 @@ def evaluate(start=21000, batch=10000):
     print("==========================================================")
 
 
-if (argv[0] == 'summary'):
+if argv and argv[0] == 'summary':
     summary()
-if (argv[0] == 'train'):
+if argv and argv[0] == 'train':
     train()
-if (argv[0] == 'evaluate'):
+if argv and argv[0] == 'train2':
+    train_balance()
+if argv and argv[0] == 'evaluate':
     evaluate()

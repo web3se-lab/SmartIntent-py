@@ -1,13 +1,23 @@
+import argparse
 import tensorflow as tf
 
-# 假设你的H5模型文件命名为"model.h5"
-h5_model_path = './models/cnn.h5'
 
-# 加载H5模型
-model = tf.keras.models.load_model(h5_model_path)
+def main():
+    parser = argparse.ArgumentParser(
+        description='Load and save a TensorFlow model.')
+    parser.add_argument('--model_path', required=True,
+                        help='Path to the model file (H5 format)')
+    parser.add_argument('--model_dir', required=True,
+                        help='Directory to save the TensorFlow model')
 
-# 指定保存路径
-save_dir = './models/cnn'
+    args = parser.parse_args()
 
-# 将模型保存为SavedModel格式，这会在指定路径创建文件夹，内含PB文件等相关文件
-tf.saved_model.save(model, save_dir)
+    # 加载H5模型
+    model = tf.keras.models.load_model(args.model_path)
+
+    # 保存模型
+    tf.saved_model.save(model, args.model_dir)
+
+
+if __name__ == "__main__":
+    main()

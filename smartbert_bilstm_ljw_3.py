@@ -1,13 +1,14 @@
-import tensorflow as tf
-from tensorflow import keras
-import dataset as db
-import dataset_ljw as db2
 import os
 import sys
+import dataset as db
+import tensorflow as tf
+import dataset_ljw as db2
+from tensorflow import keras
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 argv = sys.argv[1:]
+
 
 UNIT = 128
 BATCH = 80
@@ -18,8 +19,14 @@ MAX_SEQ = 256
 DIM = 768
 PAD = 0.0
 
-MODEL_PATH = './models/smartbert_bilstm.keras'
-# calculate by the data count of entire dataset
+
+# 两次基础训练
+# MODEL_PATH = './models/smartbert_bilstm_128base.keras'        # 有为哥
+# MODEL_PATH = './models/smartbert_bilstm_ljw_v20_v2.keras'       # 我的
+
+# 一次补全训练（0.0001）
+# MODEL_PATH = './models/smartbert_bilstm_128balance_lr0.0001.keras'
+MODEL_PATH = './models/smartbert_bilstm_128base_ljw1.keras'
 
 
 def buildModel():
@@ -57,55 +64,7 @@ def pad(xs):
     return arr
 
 
-def train(batch=BATCH, batch_size=BATCH_SIZE, epoch=EPOCH, start=1):
-    model = loadModel()
-
-    model.compile(
-        optimizer=keras.optimizers.Adam(),
-        loss=keras.losses.BinaryFocalCrossentropy(),
-        metrics=[
-            keras.metrics.BinaryAccuracy(),
-            keras.metrics.Precision(),
-            keras.metrics.Recall()
-        ]
-    )
-
-    id = start
-    print("Batch:", batch)
-    print("Batch Size:", batch_size)
-    print("Total:", batch * batch_size)
-
-    tensorboard_callback = keras.callbacks.TensorBoard(
-        log_dir="./logs", histogram_freq=1)
-    # 动态学习率调度
-    lr_schedule = keras.callbacks.ReduceLROnPlateau(
-        monitor='val_loss', factor=0.2, patience=3, min_delta=0.001)
-    # 早停机制
-    early_stopping = keras.callbacks.EarlyStopping(
-        monitor='loss', min_delta=0.0005, patience=10, restore_best_weights=True)
-
-    callbacks = [tensorboard_callback]
-
-    while batch > 0:
-        print("Current Batch:", batch)
-        print("Start Id:", id)
-        x, y, id = db.getBatch(id, batch_size)
-        print("End Id:", id)
-
-        tx = tf.convert_to_tensor(pad(x))
-        ty = tf.convert_to_tensor(y)
-        print(tx)
-        print(ty)
-
-        model.fit(tx, ty, batch_size=batch_size, epochs=epoch,
-                  shuffle=True, callbacks=callbacks)
-
-        batch -= 1
-        id += 1
-        model.save(MODEL_PATH)
-
-
-def train_balance(batch=20, epoch=100, start=1, end=17197):
+def train(batch=20, epoch=100, start=1, end=17197):
     model = loadModel()
 
     model.compile(
@@ -137,7 +96,24 @@ def train_balance(batch=20, epoch=100, start=1, end=17197):
         print(tx)
         print(ty)
 
-        model.fit(tx, ty, epochs=epoch, shuffle=True, callbacks=callbacks)
+        # model.fit(tx, ty, epochs=epoch, shuffle=True, callbacks=callbacks)
+
+        class_weights = {
+            0: 1.0,   # fee
+            1: 1.0,   # disableTrading
+            2: 1.0,   # blacklist
+            3: 1.0,   # reflect
+            4: 1.0,   # maxTX
+            5: 1.0,   # mint
+            6: 1.0,   # honeypot
+            7: 1.0,   # reward
+            8: 10.0,  # rebase
+            9: 10.0   # maxSell
+        }
+
+        model.fit(tx, ty, epochs=epoch, shuffle=True, callbacks=callbacks, class_weight=class_weights)
+
+
 
         batch -= 1
         model.save(MODEL_PATH)
@@ -200,6 +176,7 @@ def evaluate(start=20000, batch=10000):
 
     print("==========================================================")
     print("Total Metrics")
+    print(f"Model saved and evaluated from: {MODEL_PATH}")
     print("Accuracy:", accuracy)
     print("Precision:", precision)
     print("Recall:", recall)
@@ -211,7 +188,14 @@ if argv and argv[0] == 'summary':
     summary()
 if argv and argv[0] == 'train':
     train()
-if argv and argv[0] == 'train2':
-    train_balance()
+    evaluate()
 if argv and argv[0] == 'evaluate':
     evaluate()
+
+
+"""
+==========================================================
+python ./smartbert_bilstm_ljw_3.py train
+python ./smartbert_bilstm_ljw_3.py evaluate
+==========================================================
+"""
