@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ## Execution
 
-**Run in python:**
+**Run in python for Model Training and Evaluation:**
 
 ```bash
 # Summarize model
@@ -39,6 +39,7 @@ python3 ./smartbert_bilstm.py train2
 python3 ./smartbert_bilstm.py evaluate
 ```
 
+
 **Convert to TFJS model:**
 
 First change env variables in `convert_tfjs.sh`: `MODEL`, `DIR`, `JS`.
@@ -48,6 +49,18 @@ Then run convert:
 ```bash
 ./convert_tfjs.sh
 ```
+
+**Run in ipynb for GPT Experiment:**
+
+- **Important**: You first need to fill in the following variables in Step 1.
+```bash
+# You need to define your chat API and request headers here
+# chat_api_url = 
+# chat_headers = {}
+```
+- **[GPT_Experiment.ipynb](./GPT_Experiment.ipynb)**: This file contains the code for GPT experiment.
+- **[prompt.md](./prompt.md)**: The prompt given to the GPT.
+
 
 ## Settings
 
