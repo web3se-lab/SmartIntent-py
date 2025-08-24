@@ -1,6 +1,6 @@
-tensorflow[and-cuda]
-tensorflowjs
-pymysql
+tensorflow[and-cuda]==2.16.2
+tensorflowjs==4.20.0
+PyMySQL==1.1.1
 imbalanced-learn===0.12.4
-scipy
-scikit-learn
+scipy==1.14.0
+scikit-learn==1.5.2
