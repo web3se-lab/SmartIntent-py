@@ -221,3 +221,13 @@ The following shows the results of an **ablation test** using **CodeBERT** as th
 | **Average**     | 0.9672   | 0.7135    | 0.9022  | 0.7735   |
 | **Total**       | 0.9672   | 0.8516    | 0.9332  | 0.8906   |
 
+## Citation
+
+```tex
+@article{huang2025smart,
+  title={Smart Contract Intent Detection with Pre-trained Programming Language Model},
+  author={Huang, Youwei and Li, Jianwen and Fang, Sen and Li, Yao and Yang, Peng and Hu, Bin and Zhang, Tao},
+  journal={arXiv preprint arXiv:2508.20086},
+  year={2025}
+}
+```
